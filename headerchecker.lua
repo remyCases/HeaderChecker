@@ -64,6 +64,10 @@ local function correct_third_line(comment_format, line)
     return project_name == project_url
 end
 
+local function print_error(path, color, end_color)
+    print(string.format(color .. "Invalid header for %s" .. end_color, path))
+end
+
 local RED = "\27[31m"
 local GREEN = "\27[32m"
 local END = "\27[0m"
@@ -95,6 +99,13 @@ for path in io.popen(search):lines() do
         goto next_file
     end
 
+    local file = io.open(absolute_path, "r")
+    if not file then
+        print(string.format(RED .. "Can't open %s." .. END, absolute_path))
+    else
+        file:close()
+    end
+
     local ctr = 0
     local check_shebang = false
     for line in io.lines(absolute_path) do
@@ -102,23 +113,21 @@ for path in io.popen(search):lines() do
         if not check_shebang
             and extension == "lua"
             and string.match(line, "#!") then
-            print("found shebang", line)
             check_shebang = true
             goto next_line
         end
 
         ctr = ctr + 1
-        if ctr == 1 then
-            if not correct_first_line(comment_format, line) then
-                goto error_handling
-            end
-        elseif ctr==2 then
-            if not correct_second_line(comment_format, line) then
-                goto error_handling
-            end
+        if ctr == 1 and not correct_first_line(comment_format, line) then
+            print_error(absolute_path, RED, END)
+            goto next_file
+        elseif ctr==2 and not correct_second_line(comment_format, line) then
+            print_error(absolute_path, RED, END)
+            goto next_file
         elseif ctr==3 then
             if not correct_third_line(comment_format, line) then
-                goto error_handling
+                print_error(absolute_path, RED, END)
+                goto next_file
             end
             break
         end
@@ -127,10 +136,3 @@ for path in io.popen(search):lines() do
     print(string.format(GREEN .. "%s".. END, absolute_path))
     ::next_file::
 end
-goto end_script
-
-::error_handling::
-print(string.format(RED .. "Invalid header for %s" .. END, absolute_path))
-goto end_script
-
-::end_script::
