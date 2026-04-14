@@ -22,6 +22,8 @@ local extension_whitelist = {
     ["zig"] = "//",
     -- asm
     ["s"] = "#",
+    -- glsl
+    ["glsl"] = "//",
 }
 
 local blacklist = {
